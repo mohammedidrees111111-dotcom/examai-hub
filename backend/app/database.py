@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -30,6 +31,14 @@ def get_db():
 
 def init_db():
     from sqlalchemy import text
+    if "sqlite" in settings.DATABASE_URL:
+        import re
+        match = re.search(r'sqlite:///(.+)', settings.DATABASE_URL)
+        if match:
+            db_path = match.group(1)
+            db_dir = os.path.dirname(db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
     Base.metadata.create_all(bind=engine)
     if "sqlite" in settings.DATABASE_URL:
         with engine.connect() as conn:
