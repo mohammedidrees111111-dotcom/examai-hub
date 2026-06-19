@@ -11,6 +11,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl text-indigo-600">
+            <img src="/logo.svg" alt="ExamAI Hub" className="h-8 w-8" />
             ExamAI Hub
           </Link>
 

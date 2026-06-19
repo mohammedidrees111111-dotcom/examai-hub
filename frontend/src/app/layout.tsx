@@ -13,10 +13,12 @@ export const metadata: Metadata = {
   description: "AI-powered exam prediction, teacher mode, summarization, flashcards, and study plans. Supports 20+ languages.",
   keywords: "AI exam prediction, study summarizer, teacher mode, flashcards, AI learning, exam preparation",
   robots: "index, follow",
+  icons: { icon: "/favicon.svg", apple: "/logo.svg" },
   openGraph: {
     title: "ExamAI Hub - Smart Learning Platform",
     description: "AI-powered exam prediction, teacher mode, and summarization tools",
     type: "website",
+    images: ["/logo.svg"],
   },
 };
 
