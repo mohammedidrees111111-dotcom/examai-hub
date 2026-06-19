@@ -8,7 +8,7 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port 10000
     envVars:
       - key: SECRET_KEY
-        value: a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0
+        sync: false
       - key: FRONTEND_URL
         value: https://examaihub.com
       - key: CORS_ORIGINS
@@ -19,6 +19,10 @@ services:
         value: sqlite:////var/data/school_helper.db
       - key: PORT
         value: "10000"
+      - key: ADMIN_EMAIL
+        value: mohammedidrees840@gmail.com
+      - key: ADMIN_PASSWORD
+        sync: false
     disk:
       - name: data
         mountPath: /var/data

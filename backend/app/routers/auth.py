@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-import traceback
+import logging
 
 from app.database import get_db
 from app.schemas.user import UserRegister, UserLogin, TokenResponse, UserResponse
@@ -11,6 +11,7 @@ from app.services.auth_service import (
     get_user_by_email,
 )
 
+logger = logging.getLogger("examai-hub")
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -23,6 +24,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
 
         user = create_user(db, data)
         token = create_access_token({"sub": str(user.id), "email": user.email})
+        logger.info(f"User registered: {data.email}")
         return TokenResponse(
             access_token=token,
             user=UserResponse.model_validate(user),
@@ -30,17 +32,25 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Registration error: {str(e)}\n{traceback.format_exc()[-300:]}")
+        logger.error(f"Registration failed for {data.email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Registration failed. Please try again later.")
 
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: UserLogin, db: Session = Depends(get_db)):
-    user = authenticate_user(db, data.email, data.password)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+    try:
+        user = authenticate_user(db, data.email, data.password)
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_access_token({"sub": str(user.id), "email": user.email})
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse.model_validate(user),
-    )
+        token = create_access_token({"sub": str(user.id), "email": user.email})
+        logger.info(f"User logged in: {data.email}")
+        return TokenResponse(
+            access_token=token,
+            user=UserResponse.model_validate(user),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login failed for {data.email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Login failed. Please try again later.")

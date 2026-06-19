@@ -1,4 +1,5 @@
 import time
+import os
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -15,8 +16,8 @@ from app.routers import auth, ai, upload, payments, user, feedback, contact, gro
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("examai-hub")
 
-ADMIN_EMAIL = "mohammedidrees840@gmail.com"
-ADMIN_PASSWORD = "Admin@ExamAI2026!"
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 
 
 @asynccontextmanager
@@ -30,34 +31,37 @@ async def lifespan(app: FastAPI):
         logger.error(f"STARTUP FAILED: Database - {e}")
         raise
 
-    from app.models import User
-    from app.services.auth_service import hash_password
-    db = SessionLocal()
-    try:
-        admin = db.query(User).filter(User.email == ADMIN_EMAIL).first()
-        if not admin:
-            admin = User(
-                email=ADMIN_EMAIL,
-                username="admin",
-                hashed_password=hash_password(ADMIN_PASSWORD),
-                full_name="Super Admin",
-                is_premium=True,
-                is_admin=True,
-            )
-            db.add(admin)
-            db.commit()
-            logger.info(f"STARTUP: Admin user created ({ADMIN_EMAIL})")
-        else:
-            if not admin.is_admin:
-                admin.is_admin = True
-            if not admin.is_premium:
-                admin.is_premium = True
-            db.commit()
-            logger.info(f"STARTUP: Admin user verified ({ADMIN_EMAIL})")
-    except Exception as e:
-        logger.error(f"STARTUP: Admin check failed - {e}")
-    finally:
-        db.close()
+    if ADMIN_EMAIL and ADMIN_PASSWORD:
+        from app.models import User
+        from app.services.auth_service import hash_password
+        db = SessionLocal()
+        try:
+            admin = db.query(User).filter(User.email == ADMIN_EMAIL).first()
+            if not admin:
+                admin = User(
+                    email=ADMIN_EMAIL,
+                    username="admin",
+                    hashed_password=hash_password(ADMIN_PASSWORD),
+                    full_name="Super Admin",
+                    is_premium=True,
+                    is_admin=True,
+                )
+                db.add(admin)
+                db.commit()
+                logger.info(f"STARTUP: Admin user created ({ADMIN_EMAIL})")
+            else:
+                if not admin.is_admin:
+                    admin.is_admin = True
+                if not admin.is_premium:
+                    admin.is_premium = True
+                db.commit()
+                logger.info(f"STARTUP: Admin user verified ({ADMIN_EMAIL})")
+        except Exception as e:
+            logger.error(f"STARTUP: Admin check failed - {e}")
+        finally:
+            db.close()
+    else:
+        logger.info("STARTUP: No admin credentials configured")
 
     logger.info("=== STARTUP: ExamAI Hub Ready ===")
     yield
