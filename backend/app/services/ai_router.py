@@ -104,20 +104,20 @@ _available["groq"] = _init_groq()
 _available["gemini"] = _init_gemini()
 _available["deepseek"] = _init_deepseek()
 
-MODEL_ORDER = ["groq", "gemini", "deepseek"]
+MODEL_ORDER = ["hf_space", "groq", "gemini", "deepseek"]
 
 
 def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:
     prompt = _build_prompt(text, mode)
 
     for name in MODEL_ORDER:
-        if not _available.get(name):
-            continue
-        if name == "groq":
+        if name == "hf_space" and _available.get("hf_space"):
+            result = _call_hf_space(prompt, max_tokens)
+        elif name == "groq" and _available.get("groq"):
             result = _call_groq(prompt, max_tokens)
-        elif name == "gemini":
+        elif name == "gemini" and _available.get("gemini"):
             result = _call_gemini(prompt, max_tokens)
-        elif name == "deepseek":
+        elif name == "deepseek" and _available.get("deepseek"):
             result = _call_deepseek(prompt, max_tokens)
         else:
             continue
@@ -125,6 +125,34 @@ def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:
             return {"result": result, "model": name, "ai_powered": True}
 
     return {"result": None, "model": "rule_based", "ai_powered": False}
+
+
+def _init_hf_space():
+    url = os.getenv("HF_SPACE_URL", "https://mohammedid99-ollama.hf.space")
+    try:
+        import httpx
+        r = httpx.get(f"{url}/health", timeout=10)
+        if r.status_code == 200 and r.json().get("status") == "ok":
+            logger.info(f"HF Space connected: {url}")
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _call_hf_space(prompt: str, max_tokens: int = 2000) -> Optional[str]:
+    url = os.getenv("HF_SPACE_URL", "https://mohammedid99-ollama.hf.space")
+    try:
+        import httpx
+        r = httpx.post(f"{url}/generate", json={"prompt": prompt, "max_tokens": max_tokens, "temperature": 0.3}, timeout=90)
+        if r.status_code == 200:
+            return r.json().get("text", "")
+    except Exception as e:
+        logger.warning(f"HF Space call failed: {e}")
+    return None
+
+
+_available["hf_space"] = _init_hf_space()
 
 
 def _build_prompt(text: str, mode: str) -> str:
