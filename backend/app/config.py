@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./school_helper.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:////tmp/school_helper.db")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
     PAYPAL_CLIENT_ID: Optional[str] = None
