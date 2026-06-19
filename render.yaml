@@ -23,6 +23,12 @@ services:
         value: mohammedidrees840@gmail.com
       - key: ADMIN_PASSWORD
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
     disk:
       - name: data
         mountPath: /var/data
