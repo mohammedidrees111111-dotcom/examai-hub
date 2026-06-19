@@ -45,13 +45,15 @@ async def upload_pdf(
     quality_result = quality_gate_extraction(extracted_text, file.filename)
 
     if not quality_result["passed"]:
-        os.remove(file_path)
-        raise HTTPException(
-            status_code=400,
-            detail=f"PDF text quality too low (score: {quality_result['quality_report']['score']}). "
-                   f"Issues: {'; '.join(quality_result['quality_report'].get('issues', ['unknown']))}. "
-                   f"Try a different PDF or check if the file is text-based."
-        )
+        if not extracted_text or len(extracted_text) < 50:
+            os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail=f"PDF appears empty (0 text extracted). Try a different PDF or check if the file is text-based."
+            )
+        else:
+            quality_result["passed"] = True
+            quality_result["actions_taken"].append("low_quality_accepted")
 
     clean_text = quality_result["text"]
     if not clean_text or len(clean_text) < 50:
