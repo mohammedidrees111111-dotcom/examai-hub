@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     username: str
     full_name: str
     is_premium: bool
+    is_admin: bool = False
     is_active: bool
     created_at: Optional[datetime] = None
 
