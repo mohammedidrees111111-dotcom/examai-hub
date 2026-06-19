@@ -1,4 +1,4 @@
-const API_BASE = "/api/proxy";
+const API_BASE = "https://examai-hub-api.onrender.com";
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
