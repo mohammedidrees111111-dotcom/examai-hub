@@ -12,7 +12,7 @@ services:
       - key: FRONTEND_URL
         value: https://examaihub.com
       - key: CORS_ORIGINS
-        value: https://examaihub.com
+        value: https://examaihub.com,https://frontend-murex-three-94afvjw1e2.vercel.app
       - key: PAYPAL_MODE
         value: sandbox
       - key: DATABASE_URL
