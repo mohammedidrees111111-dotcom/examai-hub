@@ -45,18 +45,20 @@ async def upload_pdf(
     quality_result = quality_gate_extraction(extracted_text, file.filename)
 
     if not quality_result["passed"]:
-        if not extracted_text or len(extracted_text) < 50:
+        if not extracted_text or len(extracted_text.strip()) < 5:
             os.remove(file_path)
             raise HTTPException(
                 status_code=400,
-                detail=f"PDF appears empty (0 text extracted). Try a different PDF or check if the file is text-based."
+                detail="PDF appears empty. We tried PyMuPDF, pdfplumber, and OCR but could not extract text. Try uploading a different file."
             )
         else:
             quality_result["passed"] = True
             quality_result["actions_taken"].append("low_quality_accepted")
 
     clean_text = quality_result["text"]
-    if not clean_text or len(clean_text) < 50:
+    if not clean_text:
+        clean_text = extracted_text
+    if not clean_text or len(clean_text.strip()) < 5:
         os.remove(file_path)
         raise HTTPException(status_code=400, detail="Extracted text is empty or too short")
 

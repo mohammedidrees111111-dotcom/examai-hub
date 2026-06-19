@@ -119,18 +119,23 @@ def extract_pdf(file_path: str) -> dict:
                 result["arabic_analysis"]["ocr_fallback_applied"] = True
     else:
         raw = _extract_with_fitz(file_path)
-        if raw and len(raw) > 100:
+        if raw and len(raw) > 50:
             result["method"] = "pymupdf"
             result["raw_text"] = raw
         else:
             raw = _extract_with_pdfplumber(file_path)
-            if raw and len(raw) > 100:
+            if raw and len(raw) > 50:
                 result["method"] = "pdfplumber"
                 result["raw_text"] = raw
-            elif pdf_type["type"] == "scanned" and _TESSERACT:
-                raw = _extract_with_ocr(file_path, pdf_type["pages"])
-                result["method"] = "ocr"
-                result["raw_text"] = raw
+            else:
+                ocr_text = _extract_with_ocr(file_path, pdf_type["pages"])
+                if ocr_text and len(ocr_text) > 50:
+                    raw = ocr_text
+                    result["method"] = "ocr"
+                    result["raw_text"] = raw
+                    result["quality"]["warnings"].append("PDF required OCR - text may have errors")
+                else:
+                    raw = extracted_text if extracted_text else ""
 
     if not raw or len(raw) < 100:
         result["quality"]["warnings"].append("Extraction produced insufficient text")
