@@ -43,7 +43,24 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_cors_to_errors(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+            headers={
+                "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+                "Access-Control-Allow-Credentials": "true",
+            },
+        )
 
 app.include_router(auth.router)
 app.include_router(ai.router)
