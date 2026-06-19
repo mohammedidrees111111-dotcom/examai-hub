@@ -16,6 +16,10 @@ services:
       - key: PAYPAL_MODE
         value: sandbox
       - key: DATABASE_URL
-        value: sqlite:///./school_helper.db
+        value: sqlite:///var/data/school_helper.db
       - key: PORT
         value: "10000"
+    disk:
+      - name: data
+        mountPath: /var/data
+        sizeGB: 1
