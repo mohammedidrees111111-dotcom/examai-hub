@@ -16,3 +16,5 @@ email-validator
 cryptography
 psycopg2-binary
 groq
+google-genai
+openai

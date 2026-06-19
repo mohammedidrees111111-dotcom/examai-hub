@@ -26,6 +26,7 @@ from app.services.quality_gates import verify_ai_output, quality_gate_extraction
 from app.services.full_exam_generator import generate_full_exam
 from app.services.global_context import generate_global_analysis
 from app.services.ai_llm import ai_summarize, ai_exam_prep, ai_teacher_mode, ai_qa_generate, GROQ_AVAILABLE
+from app.services.ai_router import route_ai, is_any_ai_available
 from app.routers.user import get_current_user, log_activity
 from app.routers.feedback import deduct_tokens
 
@@ -67,14 +68,13 @@ def exam_predict(
         raise HTTPException(status_code=400, detail="Text content too short. Please provide more material.")
     _charge_usage(db, current_user.id, text, "exam_predict", req.document_id or "")
 
-    if GROQ_AVAILABLE:
-        ai_result = ai_exam_prep(text, req.num_questions or 5)
-        if ai_result:
-            log_activity(db, current_user.id, "exam_predict")
-            return ExamPredictResponse(
-                questions=[{"question": ai_result, "options": [], "answer": "", "type": "ai_generated"}],
-                total=1
-            )
+    ai = route_ai(text, "exam_predict")
+    if ai["ai_powered"]:
+        log_activity(db, current_user.id, "exam_predict")
+        return ExamPredictResponse(
+            questions=[{"question": ai["result"], "options": [], "answer": "", "type": "ai_generated", "model": ai["model"]}],
+            total=1
+        )
 
     questions = predict_exam_questions(text, req.num_questions or 5)
     log_activity(db, current_user.id, "exam_predict")
@@ -98,11 +98,10 @@ def teacher_mode(
         raise HTTPException(status_code=400, detail="Text content too short. Please provide more material.")
     _charge_usage(db, current_user.id, text, "teacher_mode", req.document_id or "")
 
-    if GROQ_AVAILABLE:
-        ai_result = ai_teacher_mode(text)
-        if ai_result:
-            log_activity(db, current_user.id, "teacher_mode")
-            return {"summary": ai_result, "key_concepts": [], "difficulty_level": "intermediate", "suggested_study_time": "30 minutes", "topic": "AI Analysis", "bullet_points": [], "recommended_resources": [], "ai_powered": True}
+    ai = route_ai(text, "teacher_mode")
+    if ai["ai_powered"]:
+        log_activity(db, current_user.id, "teacher_mode")
+        return {"summary": ai["result"], "key_concepts": [], "difficulty_level": "intermediate", "suggested_study_time": "30 minutes", "topic": "AI Analysis", "bullet_points": [], "recommended_resources": [], "model": ai["model"], "ai_powered": True}
 
     result = teacher_mode_explain(text, req.topic)
     log_activity(db, current_user.id, "teacher_mode")
@@ -126,21 +125,18 @@ def summarize(
         raise HTTPException(status_code=400, detail="Text content too short. Please provide more material.")
     _charge_usage(db, current_user.id, text, "summarize", req.document_id or "")
 
-    if GROQ_AVAILABLE:
-        ai_result = ai_summarize(text)
-        if ai_result:
-            log_activity(db, current_user.id, "summarize")
-            return {
-                "original_length": len(text.split()),
-                "summary_length": len(ai_result.split()),
-                "summary": ai_result,
-                "keywords": [],
-                "compression_ratio": f"{len(ai_result.split()) / max(len(text.split()), 1) * 100:.1f}%",
-                "sections": 1,
-                "total_chunks": 1,
-                "language": "en",
-                "ai_powered": True,
-            }
+    ai = route_ai(text, "summarize", max_tokens=2500)
+    if ai["ai_powered"]:
+        log_activity(db, current_user.id, "summarize")
+        return {
+            "original_length": len(text.split()),
+            "summary_length": len(ai["result"].split()),
+            "summary": ai["result"],
+            "keywords": [],
+            "compression_ratio": f"{len(ai['result'].split()) / max(len(text.split()), 1) * 100:.1f}%",
+            "model": ai["model"],
+            "ai_powered": True,
+        }
 
     result = hierarchical_summarize(text)
     mapped = {
@@ -437,11 +433,10 @@ def qa_summarize(
         raise HTTPException(status_code=400, detail="Text content too short. Minimum 30 characters.")
     _charge_usage(db, current_user.id, text, "qa_summarize", req.document_id or "")
 
-    if GROQ_AVAILABLE:
-        ai_result = ai_qa_generate(text)
-        if ai_result:
-            log_activity(db, current_user.id, "summarize")
-            return {"format": "qa", "total_questions": 0, "chapters_covered": 1, "total_words": len(text.split()), "chapters": [{"chapter": 1, "title": "AI Q&A", "qa_pairs": [{"type": "ai_generated", "question": "AI Generated Q&A", "answer": ai_result}]}], "all_definitions": [], "language": "en", "ai_powered": True}
+    ai = route_ai(text, "qa_generate")
+    if ai["ai_powered"]:
+        log_activity(db, current_user.id, "summarize")
+        return {"format": "qa", "total_questions": 0, "chapters_covered": 1, "total_words": len(text.split()), "chapters": [{"chapter": 1, "title": "AI Q&A", "qa_pairs": [{"type": "ai_generated", "question": "AI Generated Q&A", "answer": ai["result"]}]}], "all_definitions": [], "language": "en", "model": ai["model"], "ai_powered": True}
 
     result = generate_qa_summary(text)
     log_activity(db, current_user.id, "summarize")
