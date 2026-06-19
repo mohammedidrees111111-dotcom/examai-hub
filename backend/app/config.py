@@ -23,7 +23,12 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         if self.CORS_ORIGINS:
-            return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+            origins = [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+            if self.PAYPAL_MODE == "sandbox":
+                origins.append("https://*.vercel.app")
+            return origins
+        if self.PAYPAL_MODE == "sandbox":
+            return ["*"]
         return [self.FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"]
 
     class Config:
