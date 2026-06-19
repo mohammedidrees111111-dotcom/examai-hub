@@ -18,3 +18,5 @@ psycopg2-binary
 groq
 google-genai
 openai
+PyMuPDF
+pdfplumber

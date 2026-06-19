@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     PAYPAL_CLIENT_ID: Optional[str] = None
     PAYPAL_CLIENT_SECRET: Optional[str] = None
     PAYPAL_MODE: str = "sandbox"
-    UPLOAD_DIR: str = "./uploads"
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "/tmp/uploads")
 
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "admin@examaihub.com")
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "")
