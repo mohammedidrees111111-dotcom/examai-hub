@@ -21,15 +21,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
-    if (savedToken) {
-      setToken(savedToken);
-      api.user.me()
-        .then(setUser)
-        .catch(() => { localStorage.removeItem("token"); setToken(null); })
-        .finally(() => setLoading(false));
-    } else {
+    if (!savedToken) {
       setLoading(false);
+      return;
     }
+
+    setToken(savedToken);
+
+    let retries = 0;
+    const maxRetries = 3;
+    const tryValidate = () => {
+      api.user.me()
+        .then((u) => {
+          setUser(u);
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (err?.message?.includes?.("401") || err?.message?.includes?.("Invalid") || err?.message?.includes?.("expired")) {
+            localStorage.removeItem("token");
+            setToken(null);
+            setLoading(false);
+          } else if (retries < maxRetries) {
+            retries++;
+            setTimeout(tryValidate, 2000 * retries);
+          } else {
+            setUser({ id: 0, email: "", username: savedToken ? "..." : "", full_name: "", is_premium: false, is_active: true } as User);
+            setLoading(false);
+          }
+        });
+    };
+
+    tryValidate();
   }, []);
 
   const login = async (email: string, password: string) => {
