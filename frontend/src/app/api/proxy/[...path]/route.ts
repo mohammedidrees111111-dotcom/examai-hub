@@ -2,23 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND = "https://examai-hub-api.onrender.com";
 
-export async function GET(request: NextRequest) {
-  return proxy(request, "GET");
-}
-export async function POST(request: NextRequest) {
-  return proxy(request, "POST");
-}
-export async function PUT(request: NextRequest) {
-  return proxy(request, "PUT");
-}
-export async function DELETE(request: NextRequest) {
-  return proxy(request, "DELETE");
-}
-export async function PATCH(request: NextRequest) {
-  return proxy(request, "PATCH");
-}
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) { return proxy(request, "GET"); }
+export async function POST(request: NextRequest) { return proxy(request, "POST"); }
+export async function PUT(request: NextRequest) { return proxy(request, "PUT"); }
+export async function DELETE(request: NextRequest) { return proxy(request, "DELETE"); }
+export async function PATCH(request: NextRequest) { return proxy(request, "PATCH"); }
 export async function OPTIONS() {
-  return new NextResponse(null, { status: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS", "Access-Control-Allow-Headers": "*" } });
+  return new NextResponse(null, {
+    status: 200,
+    headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS", "Access-Control-Allow-Headers": "*" },
+  });
 }
 
 async function proxy(request: NextRequest, method: string) {
@@ -28,16 +23,28 @@ async function proxy(request: NextRequest, method: string) {
 
   try {
     const headers: Record<string, string> = {};
-    request.headers.forEach((v, k) => { if (!["host","connection","content-length"].includes(k.toLowerCase())) headers[k] = v; });
+    request.headers.forEach((v, k) => {
+      const kl = k.toLowerCase();
+      if (!["host", "connection", "content-length", "content-encoding", "transfer-encoding"].includes(kl)) {
+        headers[k] = v;
+      }
+    });
 
-    const body = method !== "GET" && method !== "HEAD" ? await request.text() : undefined;
+    const body = method !== "GET" && method !== "HEAD" ? await request.arrayBuffer() : undefined;
 
-    const res = await fetch(backendUrl, { method, headers, body });
+    const res = await fetch(backendUrl, { method, headers, body, redirect: "follow" });
+
     const responseHeaders: Record<string, string> = {};
-    res.headers.forEach((v, k) => { if (!["content-encoding","transfer-encoding"].includes(k.toLowerCase())) responseHeaders[k] = v; });
+    res.headers.forEach((v, k) => {
+      const kl = k.toLowerCase();
+      if (!["content-encoding", "transfer-encoding"].includes(kl)) {
+        responseHeaders[k] = v;
+      }
+    });
     responseHeaders["Access-Control-Allow-Origin"] = "*";
 
-    return new NextResponse(await res.text(), { status: res.status, headers: responseHeaders });
+    const responseBody = await res.arrayBuffer();
+    return new NextResponse(responseBody, { status: res.status, headers: responseHeaders });
   } catch {
     return NextResponse.json({ detail: "Backend unreachable" }, { status: 502 });
   }
