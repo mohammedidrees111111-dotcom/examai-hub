@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.examaihub.com/:path*"
+      "destination": "https://examai-hub-api.onrender.com/:path*"
     }
   ],
   "headers": [
