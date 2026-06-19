@@ -4,12 +4,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://examai-hub-api.onrender.com/:path*"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
