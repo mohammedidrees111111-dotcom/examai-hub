@@ -1,10 +1,10 @@
 fastapi
-uvicorn[standard]
+uvicorn
 sqlalchemy
-python-jose[cryptography]
-passlib[bcrypt]
+python-jose
+passlib
 python-multipart
-pydantic[email]
+pydantic
 pydantic-settings
 httpx
 aiofiles
@@ -12,3 +12,5 @@ slowapi
 PyPDF2
 python-dotenv
 bcrypt
+email-validator
+cryptography
