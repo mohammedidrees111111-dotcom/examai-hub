@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+import traceback
 
 from app.database import get_db
 from app.schemas.user import UserRegister, UserLogin, TokenResponse, UserResponse
@@ -15,16 +16,21 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(data: UserRegister, db: Session = Depends(get_db)):
-    existing = get_user_by_email(db, data.email)
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    try:
+        existing = get_user_by_email(db, data.email)
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
 
-    user = create_user(db, data)
-    token = create_access_token({"sub": str(user.id), "email": user.email})
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse.model_validate(user),
-    )
+        user = create_user(db, data)
+        token = create_access_token({"sub": str(user.id), "email": user.email})
+        return TokenResponse(
+            access_token=token,
+            user=UserResponse.model_validate(user),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration error: {str(e)}\n{traceback.format_exc()[-300:]}")
 
 
 @router.post("/login", response_model=TokenResponse)
