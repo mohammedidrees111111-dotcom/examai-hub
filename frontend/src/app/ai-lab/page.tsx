@@ -4,15 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, Question, TeacherResult, SummaryResult, PdfUploadResult, Credits, QaResult, FullExamResult, GlobalAnalysisResult } from "@/lib/api";
-import { routeAI } from "@/lib/ai-router";
-import { useLLM } from "@/contexts/LLMContext";
 
 type Tab = "predict" | "upload";
 type Mode = "teacher" | "summarize" | "predict" | "qa" | "fullexam" | "global";
 
 export default function AILabPage() {
   const { user, loading: authLoading } = useAuth();
-  const { engineReady, loadProgress, loadStatus, isLoading: llmLoading, initLLM } = useLLM();
   const router = useRouter();
 
   useEffect(() => {
@@ -119,7 +116,19 @@ export default function AILabPage() {
       setProgress(`Analyzing ${res.pages} pages (${wc.toLocaleString()} words) with ${modeLabel}...`);
 
       let result;
-      if (analyzeMode === "fullexam") {
+      if (analyzeMode === "teacher") {
+        result = await api.ai.teacherMode(res.text, undefined, res.document_id);
+        setTeacherResult(result);
+        setLastAnalysisType("teacher_mode");
+      } else if (analyzeMode === "summarize") {
+        result = await api.ai.summarize(res.text, 200, res.document_id);
+        setSummaryResult(result);
+        setLastAnalysisType("summarize");
+      } else if (analyzeMode === "qa") {
+        result = await api.ai.qaSummarize(res.text, res.document_id);
+        setQaResult(result);
+        setLastAnalysisType("qa");
+      } else if (analyzeMode === "fullexam") {
         result = await api.ai.fullExam(res.text, res.document_id);
         setFullExamResult(result);
         setLastAnalysisType("fullexam");
@@ -128,44 +137,9 @@ export default function AILabPage() {
         setGlobalResult(result);
         setLastAnalysisType("global");
       } else {
-        const textToAnalyze = res.has_full_text && res.document_id
-          ? (await api.upload.getFullDocument(res.document_id)).text
-          : res.text;
-        
-        const modeMap: Record<string, "summarize" | "exam_predict" | "teacher_mode" | "qa_generate"> = {
-          teacher: "teacher_mode",
-          summarize: "summarize",
-          qa: "qa_generate",
-          predict: "exam_predict",
-        };
-        
-        const aiResponse = await routeAI(textToAnalyze, modeMap[analyzeMode] || "summarize");
-        
-        if (analyzeMode === "teacher") {
-          setTeacherResult({
-            summary: aiResponse.text, key_concepts: [], difficulty_level: "intermediate",
-            suggested_study_time: "30 minutes", topic: "AI Analysis", bullet_points: [aiResponse.text.split("\n")[0] || ""],
-            recommended_resources: [], language: "en",
-          });
-          setLastAnalysisType("teacher_mode");
-        } else if (analyzeMode === "summarize") {
-          const sw = aiResponse.text.split(/\s+/).length;
-          setSummaryResult({
-            original_length: wc, summary_length: sw, summary: aiResponse.text, keywords: [],
-            compression_ratio: `${((sw / Math.max(wc, 1)) * 100).toFixed(1)}%`, language: "en",
-          });
-          setLastAnalysisType("summarize");
-        } else if (analyzeMode === "qa") {
-          setQaResult({
-            format: "qa", total_questions: 10, chapters_covered: 1, total_words: wc,
-            chapters: [{ chapter: 1, title: "All Content", qa_pairs: [{ type: "ai", question: "AI Q&A", answer: aiResponse.text }] }],
-            all_definitions: [], language: "en",
-          });
-          setLastAnalysisType("qa");
-        } else {
-          setQuestions([{ question: aiResponse.text, options: [], answer: "", type: aiResponse.model }]);
-          setLastAnalysisType("exam_predict");
-        }
+        result = await api.ai.examPredict(res.text, numQuestions, res.document_id);
+        setQuestions(result.questions);
+        setLastAnalysisType("exam_predict");
       }
       setRatingSent(false);
       api.feedback.credits().then(setCredits).catch(() => {});
@@ -187,23 +161,6 @@ export default function AILabPage() {
           <div>
             <h1 className="text-3xl font-bold">AI Lab</h1>
             <p className="text-gray-600 mt-1">Paste text or upload PDFs. AI predicts questions, explains concepts, and summarizes.</p>
-            {engineReady && (
-              <span className="inline-flex items-center gap-1 mt-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                Local AI Ready — Unlimited & Free
-              </span>
-            )}
-            {!engineReady && !llmLoading && (
-              <button onClick={initLLM} className="mt-2 text-xs text-indigo-500 hover:underline">
-                Enable local AI (Gemma 2B — free, unlimited)
-              </button>
-            )}
-            {llmLoading && (
-              <div className="mt-2 text-xs text-amber-600 flex items-center gap-2">
-                <div className="animate-spin h-3 w-3 border border-amber-500 border-t-transparent rounded-full" />
-                {loadStatus} ({loadProgress}%)
-              </div>
-            )}
           </div>
           {credits && !user?.is_premium && (
             <div className="text-right text-sm bg-gray-50 rounded-xl px-4 py-2 border">
