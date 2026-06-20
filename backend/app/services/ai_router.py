@@ -86,6 +86,8 @@ def route_ai(text: str, mode: str, max_tokens: int = 2000, user_id: int = 0) -> 
                 result = _call_gemini(prompt, max_tokens)
             elif name == "deepseek":
                 result = _call_deepseek(prompt, max_tokens)
+            elif name == "local_ollama":
+                result = _call_ollama(prompt, max_tokens)
             if result:
                 return {"result": result, "model": name, "ai_powered": True}
 
@@ -201,8 +203,9 @@ def _call_deepseek(prompt: str, max_tokens: int = 2000) -> Optional[str]:
 _available["groq"] = _init_groq()
 _available["gemini"] = _init_gemini()
 _available["deepseek"] = _init_deepseek()
+_available["ollama"] = _init_ollama()
 
-MODEL_ORDER = ["groq", "openai", "gemini", "deepseek"]
+MODEL_ORDER = ["local_ollama", "groq", "gemini", "deepseek"]
 
 
 def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:
@@ -211,6 +214,8 @@ def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:
     for name in MODEL_ORDER:
         if name == "hf_space" and _available.get("hf_space"):
             result = _call_hf_space(prompt, max_tokens)
+        elif name == "local_ollama" and _available.get("ollama"):
+            result = _call_ollama(prompt, max_tokens)
         elif name == "groq" and _available.get("groq"):
             result = _call_groq(prompt, max_tokens)
         elif name == "gemini" and _available.get("gemini"):
