@@ -14,11 +14,11 @@ services:
       - key: CORS_ORIGINS
         value: https://examaihub.com,https://frontend-murex-three-94afvjw1e2.vercel.app
       - key: PAYPAL_MODE
-        value: sandbox
+        value: live
       - key: PAYPAL_CLIENT_ID
-        sync: false
+        value: Ae3NMzGYCBKPQTjcG2uS1PgcQmUYmCH7KkOMTrkF_DapqRwf0Bq-vxHdLdJsgKJNBtMW_fvAN_KXGWBW
       - key: PAYPAL_CLIENT_SECRET
-        sync: false
+        value: EBtfygmdsq_UNIGZeXWuHZRCCeqRv1yHnZVEcJeoDhTfzqmr-vRjxrrr76_LFIIaKoQ_LeMNlSUavTkz
       - key: DATABASE_URL
         value: sqlite:////var/data/school_helper.db
       - key: PORT
