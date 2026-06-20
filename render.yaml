@@ -33,6 +33,8 @@ services:
         sync: false
       - key: DEEPSEEK_API_KEY
         sync: false
+      - key: OLLAMA_URL
+        value: https://ollama.examaihub.com
     disk:
       - name: data
         mountPath: /var/data
