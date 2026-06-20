@@ -15,6 +15,7 @@ function DashboardContent() {
   const [referral, setReferral] = useState<ReferralInfo | null>(null);
   const [score, setScore] = useState<UserScore | null>(null);
   const [shareMsg, setShareMsg] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
 
