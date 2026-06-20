@@ -26,14 +26,41 @@ def list_api_keys(
 ):
     return {
         "providers": [
-            {"name": "groq", "label": "Groq", "has_key": bool(current_user.api_key_groq), "url": "https://console.groq.com/keys", "free_tier": "1000 req/day"},
-            {"name": "openai", "label": "OpenAI", "has_key": bool(current_user.api_key_openai), "url": "https://platform.openai.com/api-keys", "free_tier": "Free credits"},
-            {"name": "gemini", "label": "Google Gemini", "has_key": bool(current_user.api_key_gemini), "url": "https://aistudio.google.com/apikey", "free_tier": "1500 req/day"},
-            {"name": "deepseek", "label": "DeepSeek", "has_key": bool(current_user.api_key_deepseek), "url": "https://platform.deepseek.com/api_keys", "free_tier": "Free credits"},
+            {"name": "groq", "label": "Groq", "has_key": bool(current_user.api_key_groq), "url": "https://console.groq.com/keys", "free_tier": "1000 req/day", "models": "Llama 3.3 70B"},
+            {"name": "openai", "label": "OpenAI", "has_key": bool(current_user.api_key_openai), "url": "https://platform.openai.com/api-keys", "free_tier": "Free credits", "models": "GPT-4o, GPT-4o-mini"},
+            {"name": "gemini", "label": "Google Gemini", "has_key": bool(current_user.api_key_gemini), "url": "https://aistudio.google.com/apikey", "free_tier": "1500 req/day", "models": "Gemini 2.0 Flash"},
+            {"name": "deepseek", "label": "DeepSeek", "has_key": bool(current_user.api_key_deepseek), "url": "https://platform.deepseek.com/api_keys", "free_tier": "Free credits", "models": "DeepSeek V3"},
         ],
         "encryption_active": is_encryption_available(),
         "commission_rate": "0%",
-        "note": "Your keys are encrypted. You pay your provider directly. We never charge your API usage.",
+        "billing_model": "BYOK — you pay provider directly. We never charge your API usage.",
+        "note": "Your keys are encrypted with AES-256. Platform keys used as fallback only.",
+    }
+
+
+@router.get("/billing")
+def billing_info(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return {
+        "model": "Bring Your Own Key (BYOK)",
+        "commission": "0% on API usage",
+        "premium_features": [
+            "Unlimited document uploads",
+            "Notebook (Chat + Citations)",
+            "Full Exam Generator",
+            "Multi-document analysis",
+            "Priority support",
+        ],
+        "premium_price": "$9.99/month",
+        "user_has_premium": current_user.is_premium,
+        "total_api_keys": sum([
+            bool(current_user.api_key_groq),
+            bool(current_user.api_key_openai),
+            bool(current_user.api_key_gemini),
+            bool(current_user.api_key_deepseek),
+        ]),
     }
 
 

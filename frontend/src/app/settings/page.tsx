@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 
-const API_BASE = "https://examai-hub-api.onrender.com";
+const API_BASE = typeof window !== "undefined"
+  ? (window.location.hostname === "localhost" ? "http://127.0.0.1:8000" : "https://examai-hub-api.onrender.com")
+  : "https://examai-hub-api.onrender.com";
 
 interface Provider {
   name: string;
