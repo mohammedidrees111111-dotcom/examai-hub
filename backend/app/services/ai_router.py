@@ -244,12 +244,17 @@ def _call_hf(prompt: str, max_tokens: int = 2000) -> Optional[str]:
     return None
 
 
+# --- Ollama (stub - requires Cloudflare tunnel) ---
+def _call_ollama(prompt: str, max_tokens: int = 2000) -> Optional[str]:
+    return None
+
+
 # --- Init all ---
 _available["groq"] = _init_groq()
 _available["gemini"] = _init_gemini()
 _available["deepseek"] = _init_deepseek()
 _available["huggingface"] = _init_hf()
-_available["ollama"] = _init_ollama()
+_available["ollama"] = False
 
 # First route_ai MODEL_ORDER
 MODEL_ORDER = ["huggingface", "groq", "gemini", "deepseek"]
