@@ -90,7 +90,10 @@ def activate_demo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    """Instantly activate premium for the current user."""
+    """Instantly activate premium. Works only when PayPal is not configured (development mode)."""
+    if settings.PAYPAL_CLIENT_ID and settings.PAYPAL_CLIENT_SECRET:
+        raise HTTPException(status_code=400, detail="Real payment required. Please use the PayPal checkout flow.")
+
     amount = PLAN_PRICES.get(req.plan, 9.99)
     order_id = f"DEMO-{req.plan.upper()}-{current_user.id}"
     create_payment_record(db, current_user.id, order_id, amount, req.plan)
