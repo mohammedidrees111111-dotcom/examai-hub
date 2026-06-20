@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, Stats, ReferralInfo, UserScore } from "@/lib/api";
 import Link from "next/link";
 import { Suspense } from "react";
-import AdBanner from "@/components/AdBanner";
 
 function DashboardContent() {
   const { user } = useAuth();
@@ -16,7 +15,6 @@ function DashboardContent() {
   const [referral, setReferral] = useState<ReferralInfo | null>(null);
   const [score, setScore] = useState<UserScore | null>(null);
   const [shareMsg, setShareMsg] = useState("");
-  const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -89,11 +87,6 @@ function DashboardContent() {
           Payment was cancelled. You can try again anytime.
         </div>
       )}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6">
-          {error} <button onClick={() => setError("")} className="ml-2 underline">Dismiss</button>
-        </div>
-      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
@@ -108,8 +101,6 @@ function DashboardContent() {
           </div>
         ))}
       </div>
-
-      <AdBanner slot="dashboard-mid" format="auto" className="mb-8" />
 
       <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
       <div className="grid md:grid-cols-2 gap-6 mb-12">

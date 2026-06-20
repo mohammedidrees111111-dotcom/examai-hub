@@ -1,16 +1,12 @@
 import os
 import base64
 import json
-
-try:
-    from cryptography.fernet import Fernet
-except ImportError:
-    Fernet = None
+from cryptography.fernet import Fernet
 
 _ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", "")
 _fernet = None
 
-if _ENCRYPTION_KEY and Fernet:
+if _ENCRYPTION_KEY:
     try:
         key = base64.urlsafe_b64encode(_ENCRYPTION_KEY.encode().ljust(32)[:32])
         _fernet = Fernet(key)

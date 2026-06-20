@@ -70,26 +70,20 @@ def get_credits(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    try:
-        credit = db.query(UsageCredit).filter(UsageCredit.user_id == current_user.id).first()
-        if not credit:
-            credit = UsageCredit(user_id=current_user.id, balance_tokens=CREDITS_FREE)
-            db.add(credit)
-            db.commit()
-            db.refresh(credit)
-        return {
-            "user_id": current_user.id,
-            "balance_tokens": credit.balance_tokens,
-            "total_tokens_used": credit.total_tokens_used,
-            "total_words_analyzed": credit.total_words_analyzed,
-            "plan_type": credit.plan_type,
-            "free_credits_given": CREDITS_FREE,
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Credit fetch error: {str(e)}")
+    credit = db.query(UsageCredit).filter(UsageCredit.user_id == current_user.id).first()
+    if not credit:
+        credit = UsageCredit(user_id=current_user.id, balance_tokens=CREDITS_FREE)
+        db.add(credit)
+        db.commit()
+        db.refresh(credit)
+    return {
+        "user_id": current_user.id,
+        "balance_tokens": credit.balance_tokens,
+        "total_tokens_used": credit.total_tokens_used,
+        "total_words_analyzed": credit.total_words_analyzed,
+        "plan_type": credit.plan_type,
+        "free_credits_given": CREDITS_FREE,
+    }
 
 
 @router.post("/credits/buy")
@@ -98,77 +92,64 @@ def buy_credits(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    try:
-        credit = db.query(UsageCredit).filter(UsageCredit.user_id == current_user.id).first()
-        if not credit:
-            credit = UsageCredit(user_id=current_user.id, balance_tokens=CREDITS_FREE)
-            db.add(credit)
-            db.commit()
-            db.refresh(credit)
-
-        credit.balance_tokens += data.tokens
-        credit.plan_type = "credit"
+    credit = db.query(UsageCredit).filter(UsageCredit.user_id == current_user.id).first()
+    if not credit:
+        credit = UsageCredit(user_id=current_user.id, balance_tokens=CREDITS_FREE)
+        db.add(credit)
         db.commit()
         db.refresh(credit)
-        return {
-            "balance_tokens": credit.balance_tokens,
-            "added": data.tokens,
-            "message": f"Added {data.tokens} tokens. New balance: {credit.balance_tokens}",
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Credit buy error: {str(e)}")
+
+    credit.balance_tokens += data.tokens
+    credit.plan_type = "credit"
+    db.commit()
+    db.refresh(credit)
+    return {
+        "balance_tokens": credit.balance_tokens,
+        "added": data.tokens,
+        "message": f"Added {data.tokens} tokens. New balance: {credit.balance_tokens}",
+    }
 
 
 def deduct_tokens(db: Session, user_id: int, words: int, analysis_type: str, document_id: str = "") -> dict:
-    """Deduct tokens for an AI operation. Raises HTTPException(402) on insufficient balance."""
-    try:
-        from app.models.user import User
-        user = db.query(User).filter(User.id == user_id).first()
+    from app.models.user import User
+    user = db.query(User).filter(User.id == user_id).first()
 
-        if user and user.is_premium:
-            return {"charged": 0, "remaining": -1, "premium": True}
+    if user and user.is_premium:
+        return {"charged": 0, "remaining": -1, "premium": True}
 
-        credit = db.query(UsageCredit).filter(UsageCredit.user_id == user_id).first()
-        if not credit:
-            credit = UsageCredit(user_id=user_id, balance_tokens=CREDITS_FREE)
-            db.add(credit)
-            db.commit()
-            db.refresh(credit)
-
-        tokens_needed = words * TOKENS_PER_WORD
-        cost_cents = (words / 10000) * PRICE_PER_10K_WORDS
-
-        if credit.balance_tokens < tokens_needed:
-            raise HTTPException(
-                status_code=402,
-                detail=f"Insufficient credits. Need {tokens_needed} tokens, have {credit.balance_tokens}. Buy more at /feedback/credits/buy",
-            )
-
-        credit.balance_tokens -= tokens_needed
-        credit.total_tokens_used += tokens_needed
-        credit.total_words_analyzed += words
-
-        log = UsageLog(
-            user_id=user_id,
-            document_id=document_id,
-            analysis_type=analysis_type,
-            words_processed=words,
-            tokens_charged=tokens_needed,
-            cost_cents=int(cost_cents),
-        )
-        db.add(log)
+    credit = db.query(UsageCredit).filter(UsageCredit.user_id == user_id).first()
+    if not credit:
+        credit = UsageCredit(user_id=user_id, balance_tokens=CREDITS_FREE)
+        db.add(credit)
         db.commit()
         db.refresh(credit)
 
-        return {"charged": tokens_needed, "remaining": credit.balance_tokens, "premium": False}
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Token deduction error: {str(e)}")
+    tokens_needed = words * TOKENS_PER_WORD
+    cost_cents = (words / 10000) * PRICE_PER_10K_WORDS
+
+    if credit.balance_tokens < tokens_needed:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Insufficient credits. Need {tokens_needed} tokens, have {credit.balance_tokens}. Buy more at /feedback/credits/buy",
+        )
+
+    credit.balance_tokens -= tokens_needed
+    credit.total_tokens_used += tokens_needed
+    credit.total_words_analyzed += words
+
+    log = UsageLog(
+        user_id=user_id,
+        document_id=document_id,
+        analysis_type=analysis_type,
+        words_processed=words,
+        tokens_charged=tokens_needed,
+        cost_cents=int(cost_cents),
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(credit)
+
+    return {"charged": tokens_needed, "remaining": credit.balance_tokens, "premium": False}
 
 
 @router.get("/usage/history")

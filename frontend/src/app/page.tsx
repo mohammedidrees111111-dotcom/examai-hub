@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import AdBanner from "@/components/AdBanner";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -54,10 +53,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <div className="max-w-6xl mx-auto px-4">
-        <AdBanner slot="home-leaderboard" format="horizontal" />
-      </div>
 
       {/* Pricing */}
       <section className="py-20">
