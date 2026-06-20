@@ -208,15 +208,10 @@ def _init_hf():
     if not key:
         return False
     try:
-        import httpx
-        r = httpx.get("https://api-inference.huggingface.co/models/Qwen/Qwen2.5-1.5B-Instruct",
-                       headers={"Authorization": f"Bearer {key}"}, timeout=10)
-        if r.status_code in (200, 503):
-            logger.info("HuggingFace initialized")
-            return True
+        logger.info("HuggingFace initialized (token present)")
+        return True
     except Exception:
-        pass
-    return False
+        return False
 
 
 def _call_hf(prompt: str, max_tokens: int = 2000) -> Optional[str]:
@@ -229,7 +224,7 @@ def _call_hf(prompt: str, max_tokens: int = 2000) -> Optional[str]:
             "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-1.5B-Instruct",
             headers={"Authorization": f"Bearer {key}"},
             json={"inputs": prompt, "parameters": {"max_new_tokens": max_tokens, "temperature": 0.3}},
-            timeout=90
+            timeout=60
         )
         if r.status_code == 200:
             data = r.json()
@@ -237,8 +232,6 @@ def _call_hf(prompt: str, max_tokens: int = 2000) -> Optional[str]:
                 return data[0].get("generated_text", "")
             if isinstance(data, dict):
                 return data.get("generated_text", "")
-        if r.status_code == 503:
-            time.sleep(3)
     except Exception as e:
         logger.warning(f"HuggingFace call failed: {e}")
     return None
