@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 from typing import Optional
 
@@ -88,6 +89,8 @@ def route_ai(text: str, mode: str, max_tokens: int = 2000, user_id: int = 0) -> 
                 result = _call_deepseek(prompt, max_tokens)
             elif name == "local_ollama":
                 result = _call_ollama(prompt, max_tokens)
+            elif name == "huggingface":
+                result = _call_hf(prompt, max_tokens)
             if result:
                 return {"result": result, "model": name, "ai_powered": True}
 
@@ -199,13 +202,57 @@ def _call_deepseek(prompt: str, max_tokens: int = 2000) -> Optional[str]:
         return None
 
 
+# --- HuggingFace ---
+def _init_hf():
+    key = os.getenv("HF_TOKEN", "")
+    if not key:
+        return False
+    try:
+        import httpx
+        r = httpx.get("https://api-inference.huggingface.co/models/Qwen/Qwen2.5-1.5B-Instruct",
+                       headers={"Authorization": f"Bearer {key}"}, timeout=10)
+        if r.status_code in (200, 503):
+            logger.info("HuggingFace initialized")
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _call_hf(prompt: str, max_tokens: int = 2000) -> Optional[str]:
+    key = os.getenv("HF_TOKEN", "")
+    if not key:
+        return None
+    try:
+        import httpx
+        r = httpx.post(
+            "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-1.5B-Instruct",
+            headers={"Authorization": f"Bearer {key}"},
+            json={"inputs": prompt, "parameters": {"max_new_tokens": max_tokens, "temperature": 0.3}},
+            timeout=90
+        )
+        if r.status_code == 200:
+            data = r.json()
+            if isinstance(data, list) and len(data) > 0:
+                return data[0].get("generated_text", "")
+            if isinstance(data, dict):
+                return data.get("generated_text", "")
+        if r.status_code == 503:
+            time.sleep(3)
+    except Exception as e:
+        logger.warning(f"HuggingFace call failed: {e}")
+    return None
+
+
 # --- Init all ---
 _available["groq"] = _init_groq()
 _available["gemini"] = _init_gemini()
 _available["deepseek"] = _init_deepseek()
+_available["huggingface"] = _init_hf()
 _available["ollama"] = _init_ollama()
 
-MODEL_ORDER = ["groq", "gemini", "deepseek"]
+# First route_ai MODEL_ORDER
+MODEL_ORDER = ["huggingface", "groq", "gemini", "deepseek"]
 
 
 def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:
@@ -216,6 +263,8 @@ def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:
             result = _call_hf_space(prompt, max_tokens)
         elif name == "local_ollama" and _available.get("ollama"):
             result = _call_ollama(prompt, max_tokens)
+        elif name == "huggingface" and _available.get("huggingface"):
+            result = _call_hf(prompt, max_tokens)
         elif name == "groq" and _available.get("groq"):
             result = _call_groq(prompt, max_tokens)
         elif name == "gemini" and _available.get("gemini"):

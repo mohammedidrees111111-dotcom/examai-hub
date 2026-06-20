@@ -35,6 +35,8 @@ services:
         sync: false
       - key: OLLAMA_URL
         value: https://ollama.examaihub.com
+      - key: HF_TOKEN
+        sync: false
     disk:
       - name: data
         mountPath: /var/data
