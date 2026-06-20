@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.database import init_db, check_db_connection, SessionLocal
-from app.routers import auth, ai, upload, payments, user, feedback, contact, growth
+from app.routers import auth, ai, upload, payments, user, feedback, contact, growth, settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("examai-hub")
@@ -129,6 +129,7 @@ app.include_router(user.router)
 app.include_router(feedback.router)
 app.include_router(contact.router)
 app.include_router(growth.router)
+app.include_router(settings.router)
 
 
 @app.get("/", tags=["Health"])

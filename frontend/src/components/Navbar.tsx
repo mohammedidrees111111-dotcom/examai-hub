@@ -21,6 +21,7 @@ export default function Navbar() {
                 <Link href="/dashboard" className="text-gray-700 hover:text-indigo-600">Dashboard</Link>
                 <Link href="/ai-lab" className="text-gray-700 hover:text-indigo-600 font-medium">AI Lab</Link>
                 <Link href="/analytics" className="text-gray-700 hover:text-indigo-600">Analytics</Link>
+                <Link href="/settings" className="text-gray-700 hover:text-indigo-600">Settings</Link>
                 <span className="text-sm text-gray-500">
                   {user.is_premium ? <span className="text-yellow-600 font-semibold">Premium</span> : "Free"}
                 </span>

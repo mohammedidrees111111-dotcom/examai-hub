@@ -68,7 +68,7 @@ def exam_predict(
         raise HTTPException(status_code=400, detail="Text content too short. Please provide more material.")
     _charge_usage(db, current_user.id, text, "exam_predict", req.document_id or "")
 
-    ai = route_ai(text, "exam_predict")
+    ai = route_ai(text, "exam_predict", user_id=current_user.id)
     if ai["ai_powered"]:
         log_activity(db, current_user.id, "exam_predict")
         return ExamPredictResponse(
@@ -98,7 +98,7 @@ def teacher_mode(
         raise HTTPException(status_code=400, detail="Text content too short. Please provide more material.")
     _charge_usage(db, current_user.id, text, "teacher_mode", req.document_id or "")
 
-    ai = route_ai(text, "teacher_mode")
+    ai = route_ai(text, "teacher_mode", user_id=current_user.id)
     if ai["ai_powered"]:
         log_activity(db, current_user.id, "teacher_mode")
         return {"summary": ai["result"], "key_concepts": [], "difficulty_level": "intermediate", "suggested_study_time": "30 minutes", "topic": "AI Analysis", "bullet_points": [], "recommended_resources": [], "model": ai["model"], "ai_powered": True}
@@ -125,7 +125,7 @@ def summarize(
         raise HTTPException(status_code=400, detail="Text content too short. Please provide more material.")
     _charge_usage(db, current_user.id, text, "summarize", req.document_id or "")
 
-    ai = route_ai(text, "summarize", max_tokens=2500)
+    ai = route_ai(text, "summarize", max_tokens=2500, user_id=current_user.id)
     if ai["ai_powered"]:
         log_activity(db, current_user.id, "summarize")
         return {
@@ -433,7 +433,7 @@ def qa_summarize(
         raise HTTPException(status_code=400, detail="Text content too short. Minimum 30 characters.")
     _charge_usage(db, current_user.id, text, "qa_summarize", req.document_id or "")
 
-    ai = route_ai(text, "qa_generate")
+    ai = route_ai(text, "qa_generate", user_id=current_user.id)
     if ai["ai_powered"]:
         log_activity(db, current_user.id, "summarize")
         return {"format": "qa", "total_questions": 0, "chapters_covered": 1, "total_words": len(text.split()), "chapters": [{"chapter": 1, "title": "AI Q&A", "qa_pairs": [{"type": "ai_generated", "question": "AI Generated Q&A", "answer": ai["result"]}]}], "all_definitions": [], "language": "en", "model": ai["model"], "ai_powered": True}

@@ -15,11 +15,109 @@ def _init_groq():
     try:
         from groq import Groq
         _clients["groq"] = Groq(api_key=key)
-        logger.info("Groq initialized")
+        _user_clients["groq"] = {}
+        logger.info("Groq initialized (platform key)")
         return True
     except Exception as e:
         logger.warning(f"Groq init failed: {e}")
         return False
+
+
+_user_clients = {}
+
+
+def _get_or_create_user_client(provider: str, user_id: int, db_session=None):
+    if provider not in _user_clients:
+        _user_clients[provider] = {}
+
+    if user_id in _user_clients[provider]:
+        return _user_clients[provider][user_id]
+
+    user_key = _get_user_api_key(user_id, provider)
+    if not user_key:
+        return None
+
+    try:
+        if provider == "groq":
+            from groq import Groq
+            client = Groq(api_key=user_key)
+        elif provider == "openai":
+            from openai import OpenAI
+            client = OpenAI(api_key=user_key)
+        else:
+            return None
+
+        _user_clients[provider][user_id] = client
+        return client
+    except Exception:
+        return None
+
+
+def _get_user_api_key(user_id: int, provider: str) -> str:
+    from app.database import SessionLocal
+    from app.routers.settings import get_user_api_key
+    db = SessionLocal()
+    try:
+        return get_user_api_key(db, user_id, provider)
+    finally:
+        db.close()
+
+
+def route_ai(text: str, mode: str, max_tokens: int = 2000, user_id: int = 0) -> dict:
+    prompt = _build_prompt(text, mode)
+
+    for name in MODEL_ORDER:
+        result = None
+
+        if user_id > 0:
+            user_client = _get_or_create_user_client(name, user_id)
+            if user_client:
+                if name == "groq":
+                    result = _call_groq_with_client(user_client, prompt, max_tokens)
+                elif name == "openai":
+                    result = _call_openai_with_client(user_client, prompt, max_tokens)
+                if result:
+                    return {"result": result, "model": f"user-{name}", "ai_powered": True}
+
+        if _available.get(name):
+            if name == "groq":
+                result = _call_groq(prompt, max_tokens)
+            elif name == "gemini":
+                result = _call_gemini(prompt, max_tokens)
+            elif name == "deepseek":
+                result = _call_deepseek(prompt, max_tokens)
+            if result:
+                return {"result": result, "model": name, "ai_powered": True}
+
+    return {"result": None, "model": "rule_based", "ai_powered": False}
+
+
+def _call_groq_with_client(client, prompt: str, max_tokens: int = 2000) -> Optional[str]:
+    try:
+        r = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens,
+            temperature=0.3,
+        )
+        return r.choices[0].message.content
+    except Exception as e:
+        logger.warning(f"User Groq call failed: {e}")
+        return None
+
+
+def _call_openai_with_client(client, prompt: str, max_tokens: int = 2000) -> Optional[str]:
+    try:
+        r = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens,
+            temperature=0.3,
+        )
+        return r.choices[0].message.content
+    except Exception as e:
+        logger.warning(f"User OpenAI call failed: {e}")
+        return None
 
 
 def _call_groq(prompt: str, max_tokens: int = 2000) -> Optional[str]:
@@ -104,7 +202,7 @@ _available["groq"] = _init_groq()
 _available["gemini"] = _init_gemini()
 _available["deepseek"] = _init_deepseek()
 
-MODEL_ORDER = ["groq", "gemini", "deepseek"]
+MODEL_ORDER = ["groq", "openai", "gemini", "deepseek"]
 
 
 def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:
