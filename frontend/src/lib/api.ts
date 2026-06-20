@@ -13,7 +13,7 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const err = await res.json().catch(() => ({ detail: "Request failed" }));
     throw new Error(err.detail || `HTTP ${res.status}`);
   }
-  return res.json();
+  return res.json().catch(() => { throw new Error("Invalid response from server"); });
 }
 
 export const api = {

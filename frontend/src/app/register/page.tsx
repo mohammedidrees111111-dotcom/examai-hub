@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import AdBanner from "@/components/AdBanner";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -50,6 +51,9 @@ export default function RegisterPage() {
             {loading ? "Creating..." : "Create Account"}
           </button>
         </form>
+        <div className="mt-4">
+          <AdBanner slot="register-bottom" format="auto" />
+        </div>
         <p className="text-center text-sm text-gray-500 mt-4">
           Already have an account? <Link href="/login" className="text-indigo-600 hover:underline">Login</Link>
         </p>

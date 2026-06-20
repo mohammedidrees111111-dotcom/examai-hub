@@ -49,12 +49,9 @@ def _charge_usage(db: Session, user_id: int, text: str, analysis_type: str, docu
     try:
         return deduct_tokens(db, user_id, words, analysis_type, document_id)
     except HTTPException as e:
-        if e.status_code == 402:
-            raise HTTPException(
-                status_code=402,
-                detail=f"Insufficient credits. You need {words * 2} tokens for {words} words. Upgrade to Premium for unlimited or buy credits at /feedback/credits/buy",
-            )
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Credit system error: {str(e)}")
 
 
 @router.post("/exam-predict", response_model=ExamPredictResponse)

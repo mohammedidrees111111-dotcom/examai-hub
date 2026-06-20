@@ -2,7 +2,7 @@ import time
 import os
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -13,6 +13,7 @@ from app.config import settings
 from app.database import init_db, check_db_connection, SessionLocal
 from app.routers import auth, ai, upload, payments, user, feedback, contact, growth
 from app.routers.settings import router as settings_router
+from app.routers.user import get_current_user
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("examai-hub")
@@ -83,10 +84,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
+    allow_origins=settings.cors_origins_list or [
         "https://examaihub.com",
         "https://www.examaihub.com",
-        "https://*.vercel.app",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ],
@@ -113,12 +113,15 @@ async def cors_errors_middleware(request: Request, call_next):
         return response
     except Exception as e:
         logger.error(f"Unhandled error on {request.method} {request.url.path}: {e}", exc_info=True)
+        origin = request.headers.get("origin", "")
+        allowed = settings.cors_origins_list
+        allow_origin = origin if origin in allowed else (allowed[0] if allowed else "*")
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error. Our team has been notified."},
             headers={
-                "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
-                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Allow-Origin": allow_origin,
+                "Access-Control-Allow-Credentials": "true" if allow_origin != "*" else "false",
             },
         )
 
@@ -175,10 +178,13 @@ app.state.start_time = START_TIME
 
 
 @app.get("/admin/stats", tags=["Admin"])
-def admin_stats():
+def admin_stats(current_user=Depends(get_current_user)):
     from app.database import SessionLocal
     from app.models import User, Payment, Activity, Feedback
     from sqlalchemy import func
+    admin_id = int(os.getenv("ADMIN_USER_ID", "1"))
+    if current_user.id != admin_id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
     db = SessionLocal()
     try:
         users = db.query(func.count(User.id)).scalar() or 0

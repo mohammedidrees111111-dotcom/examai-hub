@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, Question, TeacherResult, SummaryResult, PdfUploadResult, Credits, QaResult, FullExamResult, GlobalAnalysisResult } from "@/lib/api";
+import AdBanner from "@/components/AdBanner";
 
 type Tab = "predict" | "upload";
 type Mode = "teacher" | "summarize" | "predict" | "qa" | "fullexam" | "global";
@@ -305,6 +306,8 @@ export default function AILabPage() {
           </div>
         </div>
       )}
+
+      <AdBanner slot="ai-lab-mid" format="auto" className="mt-6" />
 
       {/* Results go directly here after upload */}
       {extractMeta?.has_full_text && (

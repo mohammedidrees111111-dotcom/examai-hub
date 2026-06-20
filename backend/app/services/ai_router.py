@@ -91,6 +91,8 @@ def route_ai(text: str, mode: str, max_tokens: int = 2000, user_id: int = 0) -> 
                 result = _call_ollama(prompt, max_tokens)
             elif name == "huggingface":
                 result = _call_hf(prompt, max_tokens)
+            elif name == "hf_space":
+                result = _call_hf_space(prompt, max_tokens)
             if result:
                 return {"result": result, "model": name, "ai_powered": True}
 
@@ -250,31 +252,7 @@ _available["huggingface"] = _init_hf()
 _available["ollama"] = False
 
 # First route_ai MODEL_ORDER
-MODEL_ORDER = ["huggingface", "groq", "gemini", "deepseek"]
-
-
-def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:
-    prompt = _build_prompt(text, mode)
-
-    for name in MODEL_ORDER:
-        if name == "hf_space" and _available.get("hf_space"):
-            result = _call_hf_space(prompt, max_tokens)
-        elif name == "local_ollama" and _available.get("ollama"):
-            result = _call_ollama(prompt, max_tokens)
-        elif name == "huggingface" and _available.get("huggingface"):
-            result = _call_hf(prompt, max_tokens)
-        elif name == "groq" and _available.get("groq"):
-            result = _call_groq(prompt, max_tokens)
-        elif name == "gemini" and _available.get("gemini"):
-            result = _call_gemini(prompt, max_tokens)
-        elif name == "deepseek" and _available.get("deepseek"):
-            result = _call_deepseek(prompt, max_tokens)
-        else:
-            continue
-        if result:
-            return {"result": result, "model": name, "ai_powered": True}
-
-    return {"result": None, "model": "rule_based", "ai_powered": False}
+MODEL_ORDER = ["huggingface", "groq", "gemini", "deepseek", "hf_space", "local_ollama"]
 
 
 def _init_hf_space():
