@@ -104,7 +104,7 @@ _available["groq"] = _init_groq()
 _available["gemini"] = _init_gemini()
 _available["deepseek"] = _init_deepseek()
 
-MODEL_ORDER = ["hf_space", "groq", "gemini", "deepseek"]
+MODEL_ORDER = ["groq", "gemini", "deepseek"]
 
 
 def route_ai(text: str, mode: str, max_tokens: int = 2000) -> dict:

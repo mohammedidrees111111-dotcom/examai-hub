@@ -35,7 +35,13 @@ async function callRemoteAPI(endpoint: string, body: object): Promise<string | n
 }
 
 export async function routeAI(text: string, mode: AIMode): Promise<AIResult> {
-  // Layer 1: WebLLM (local browser - unlimited + free)
+  // Layer 1: Remote APIs via backend (Groq → Gemini → DeepSeek → Rule-based)
+  const remoteResult = await callRemoteAPI(endpointMap[mode], body);
+  if (remoteResult) {
+    return { text: remoteResult, model: "cloud-ai", aiPowered: true };
+  }
+
+  // Layer 2: WebLLM (local browser - unlimited + free)
   if (isEngineReady()) {
     try {
       let result: string;
