@@ -16,9 +16,9 @@ services:
       - key: PAYPAL_MODE
         value: live
       - key: PAYPAL_CLIENT_ID
-        value: Ae3NMzGYCBKPQTjcG2uS1PgcQmUYmCH7KkOMTrkF_DapqRwf0Bq-vxHdLdJsgKJNBtMW_fvAN_KXGWBW
+        sync: false
       - key: PAYPAL_CLIENT_SECRET
-        value: EBtfygmdsq_UNIGZeXWuHZRCCeqRv1yHnZVEcJeoDhTfzqmr-vRjxrrr76_LFIIaKoQ_LeMNlSUavTkz
+        sync: false
       - key: DATABASE_URL
         value: sqlite:////var/data/school_helper.db
       - key: PORT

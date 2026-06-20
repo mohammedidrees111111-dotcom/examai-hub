@@ -26,9 +26,13 @@ function DashboardContent() {
         setPayResult("success");
         sessionStorage.removeItem("pending_order_id");
         window.location.reload();
+      } else {
+        setPayResult("");
+        setError("Payment not completed. Please try again.");
       }
-    } catch {
-      setPayResult("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Payment failed";
+      setError(msg);
     } finally {
       setLoading(false);
     }

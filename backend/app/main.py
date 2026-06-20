@@ -111,10 +111,11 @@ async def cors_errors_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         return response
-    except Exception:
+    except Exception as e:
+        logger.error(f"Unhandled error on {request.method} {request.url.path}: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
-            content={"detail": "Internal server error"},
+            content={"detail": "Internal server error. Our team has been notified."},
             headers={
                 "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
                 "Access-Control-Allow-Credentials": "true",

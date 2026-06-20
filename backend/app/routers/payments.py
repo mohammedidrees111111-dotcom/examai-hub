@@ -46,6 +46,14 @@ async def capture_order(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    from app.models.payment import Payment
+    payment = db.query(Payment).filter(
+        Payment.paypal_order_id == req.order_id,
+        Payment.user_id == current_user.id,
+    ).first()
+    if not payment and not req.order_id.startswith("DEMO-"):
+        raise HTTPException(status_code=404, detail="Order not found or does not belong to you")
+
     result = await capture_paypal_order(req.order_id)
 
     capture_id = result.get("capture_id", "")

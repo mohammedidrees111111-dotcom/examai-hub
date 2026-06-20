@@ -1,4 +1,4 @@
-const API_BASE = "https://examai-hub-api.onrender.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://examai-hub-api.onrender.com";
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -178,6 +178,7 @@ export interface User {
   username: string;
   full_name: string;
   is_premium: boolean;
+  is_admin: boolean;
   is_active: boolean;
   created_at?: string;
 }

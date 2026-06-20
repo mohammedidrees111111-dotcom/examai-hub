@@ -37,39 +37,53 @@ async def create_paypal_order(amount: float, currency: str = "USD", plan: str = 
             "status": "demo",
         }
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
-        resp = await client.post(
-            f"{PAYPAL_BASE}/v2/checkout/orders",
-            json={
-                "intent": "CAPTURE",
-                "purchase_units": [{
-                    "amount": {"currency_code": currency, "value": str(amount)},
-                    "description": f"ExamAI Hub - {plan.capitalize()} Plan",
-                }],
-                "application_context": {
-                    "return_url": f"{settings.FRONTEND_URL}/dashboard?payment=success",
-                    "cancel_url": f"{settings.FRONTEND_URL}/dashboard?payment=cancelled",
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+            resp = await client.post(
+                f"{PAYPAL_BASE}/v2/checkout/orders",
+                json={
+                    "intent": "CAPTURE",
+                    "purchase_units": [{
+                        "amount": {"currency_code": currency, "value": str(amount)},
+                        "description": f"ExamAI Hub - {plan.capitalize()} Plan",
+                        "custom_id": str(user_id),
+                    }],
+                    "application_context": {
+                        "return_url": f"{settings.FRONTEND_URL}/dashboard?payment=success",
+                        "cancel_url": f"{settings.FRONTEND_URL}/dashboard?payment=cancelled",
+                    },
                 },
-            },
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            },
-        )
-        data = resp.json()
-        order_id = data.get("id", "")
-        approval_url = None
-        for link in data.get("links", []):
-            if link.get("rel") == "approve":
-                approval_url = link.get("href")
-                break
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+            )
+            data = resp.json()
+            
+            if resp.status_code >= 400:
+                import logging
+                logger = logging.getLogger("examai-hub")
+                logger.error(f"PayPal create order failed: {resp.status_code} - {data}")
+                return {"error": data.get("message", "PayPal API error"), "order_id": "", "status": "error"}
 
-        return {
-            "order_id": order_id,
-            "approval_url": approval_url,
-            "status": data.get("status", "unknown"),
-            "return_url": f"{settings.FRONTEND_URL}/dashboard?payment=success&order_id={order_id}",
-        }
+            order_id = data.get("id", "")
+            approval_url = None
+            for link in data.get("links", []):
+                if link.get("rel") == "approve":
+                    approval_url = link.get("href")
+                    break
+
+            return {
+                "order_id": order_id,
+                "approval_url": approval_url,
+                "status": data.get("status", "unknown"),
+                "return_url": f"{settings.FRONTEND_URL}/dashboard?payment=success&order_id={order_id}",
+            }
+    except Exception as e:
+        import logging
+        logger = logging.getLogger("examai-hub")
+        logger.error(f"PayPal create order exception: {e}", exc_info=True)
+        return {"error": f"Payment service error: {str(e)[:200]}", "order_id": "", "status": "error"}
 
 
 async def capture_paypal_order(order_id: str) -> dict:
