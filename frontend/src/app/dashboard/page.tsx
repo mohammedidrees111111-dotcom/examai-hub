@@ -170,16 +170,10 @@ function DashboardContent() {
             onClick={async () => {
               setLoading(true);
               try {
-                const order = await api.payments.createOrder("monthly");
-                if (order.status === "demo") {
-                  const res = await api.payments.activateDemo("monthly");
-                  if (res.premium_activated) {
-                    setPayResult("success");
-                    window.location.reload();
-                  }
-                } else if (order.approval_url) {
-                  sessionStorage.setItem("pending_order_id", order.order_id);
-                  window.location.href = order.approval_url;
+                const res = await api.payments.activateDemo("monthly");
+                if (res.premium_activated) {
+                  setPayResult("success");
+                  window.location.reload();
                 }
               } catch (err: unknown) {
                 alert(err instanceof Error ? err.message : "Payment failed");

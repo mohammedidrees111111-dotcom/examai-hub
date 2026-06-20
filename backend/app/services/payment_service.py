@@ -68,7 +68,7 @@ async def create_paypal_order(amount: float, currency: str = "USD", plan: str = 
             "order_id": order_id,
             "approval_url": approval_url,
             "status": data.get("status", "unknown"),
-            "return_url": f"http://localhost:3000/dashboard?payment=success&order_id={order_id}",
+            "return_url": f"{settings.FRONTEND_URL}/dashboard?payment=success&order_id={order_id}",
         }
 
 
